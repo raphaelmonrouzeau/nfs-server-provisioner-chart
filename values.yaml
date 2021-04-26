@@ -1,0 +1,140 @@
+# Default values for nfs-provisioner.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This should really be hardcoded to 1
+replicaCount: 1
+
+# imagePullSecrets:
+
+image:
+  repository: gcr.io/k8s-staging-sig-storage/nfs-provisioner
+  tag: v3.0.0
+  # digest:
+  pullPolicy: IfNotPresent
+
+# For a list of available arguments
+# Please see https://github.com/kubernetes-incubator/external-storage/blob/master/nfs/docs/deployment.md#arguments
+extraArgs: {}
+  # device-based-fsids: false
+  # grace-period: 0
+
+service:
+  # Type of Service
+  #type: ClusterIP
+  # Longhorn recommended hardcoding a random unique cluster IP since PVCs ended
+  # up with this hardcoded service IP after creation. And so on delete &
+  # recreate of the service the previous PV's still pointed to the same
+  # nfs-provisioner.
+  # If you do so you'll have to pick a new ip for each new nfs provisioner.
+  # To reliably find the service network CIDR of your cluster, as per
+  # https://stackoverflow.com/questions/44190607/how-do-you-find-the-cluster-service-cidr-of-a-kubernetes-cluster
+  # use
+  # kubectl create svc clusterip foo --clusterip=1.1.1.1 --tcp=443:443
+  # and look at the error message
+  #clusterIP: ''
+  # Standard NFSv3 port
+  #nfsPort: 2049
+  # Standard NFSv3 port
+  #nlockmgrPort: 32803
+  # Standard NFSv3 port
+  #mountdPort: 20048
+  # Standard NFSv3 port
+  #rquotadPort: 875
+  # Standard NFSv3 port
+  #rpcbindPort: 111
+  # Standard NFSv3 port
+  #statdPort: 662
+  # If your service is of type NodePort you can choose the ports
+  # nfsNodePort: 2049
+  # nlockmgrNodePort: 32803
+  # mountdNodePort: 20048
+  # rquotadNodePort: 875
+  # rpcbindNodePort: 111
+  # statdNodePort: 662
+
+  externalIPs: []
+
+persistence:
+  enabled: false
+
+  ## Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  # storageClass: "-"
+
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+## For creating the StorageClass automatically:
+storageClass:
+  create: true
+
+  ## Set a provisioner name. If unset, a name will be generated.
+  # provisionerName:
+
+  ## Set StorageClass as the default StorageClass
+  ## Ignored if storageClass.create is false
+  defaultClass: false
+
+  ## Set a StorageClass name
+  ## Ignored if storageClass.create is false
+  name: nfs
+
+  # set to null to prevent expansion
+  allowVolumeExpansion: true
+  ## StorageClass parameters
+  parameters: {}
+
+  mountOptions:
+  - vers=3
+
+  ## ReclaimPolicy field of the class, which can be either Delete or Retain
+  reclaimPolicy: Delete
+
+## For RBAC support:
+rbac:
+  create: true
+
+  ## Ignored if rbac.create is true
+  ##
+  serviceAccountName: default
+
+resources: {}
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+nodeSelector: {}
+
+# In the case of a node failure, a replacement nfs-provisioner pod should be
+# available after roughly 90 seconds.
+# Longhorm recommended the following tolerations to decide when to evict the
+# nfs-provisioner pod. You can lower the tolerationSeconds to lower the
+# nfs-provisioner failover time in the case of a node failure.
+#
+# tolerations:
+#   - effect: NoExecute
+#     key: node.kubernetes.io/not-ready
+#     operator: Exists
+#     tolerationSeconds: 60
+#   - effect: NoExecute
+#     key: node.kubernetes.io/unreachable
+#     operator: Exists
+#     tolerationSeconds: 60
+tolerations: []
+
+affinity: {}
+
+# Extra labels to put on resources.
+# We advise to set at least
+#   app.kubernetes.io/part-of: Environment | Platform | Application | Service
+#   app.kubernetes.io/component: E.g. "nfs-provisioner"
+extraLabels: {}

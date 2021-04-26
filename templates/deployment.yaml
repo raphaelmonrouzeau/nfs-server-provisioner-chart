@@ -1,0 +1,154 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "nfs-provisioner.fullname" . }}
+  labels:
+    helm.sh/chart: {{ include "nfs-provisioner.chart" . }}
+    app.kubernetes.io/name: {{ include "nfs-provisioner.name" . }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    {{- range $key, $value := .Values.extraLabels }}
+    "{{ $key }}": "{{ $value }}"
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "nfs-provisioner.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  # TODO: Investigate how/if nfs-provisioner can be scaled out beyond 1 replica
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  #serviceName: {{ include "nfs-provisioner.fullname" . }}
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: {{ include "nfs-provisioner.chart" . }}
+        app.kubernetes.io/name: {{ include "nfs-provisioner.name" . }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion }}
+        {{- range $key, $value := .Values.extraLabels }}
+        "{{ $key }}": "{{ $value }}"
+        {{- end }}
+    spec:
+      serviceAccountName: {{ if .Values.rbac.create }}{{ include "nfs-provisioner.fullname" . }}{{ else }}{{ .Values.rbac.serviceAccountName | quote }}{{ end }}
+      # NOTE: Upstream default is 100, 10 seconds longer than default
+      # NOTE:   nfs-provisioner --grace-period value of 90sec. We want really
+      # NOTE:   quick failover
+      terminationGracePeriodSeconds: 30
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.image }}
+          image: "{{ .repository }}{{ if .digest }}@{{ .digest }}{{ else }}:{{ .tag }}{{ end }}"
+          imagePullPolicy: {{ .pullPolicy }}
+          {{- end }}
+          ports:
+          - name: nfs
+            containerPort: 2049
+            protocol: TCP
+          - name: nfs-udp
+            containerPort: 2049
+            protocol: UDP
+          - name: nlockmgr
+            containerPort: 32803
+            protocol: TCP
+          - name: nlockmgr-udp
+            containerPort: 32803
+            protocol: UDP
+          - name: mountd
+            containerPort: 20048
+            protocol: TCP
+          - name: mountd-udp
+            containerPort: 20048
+            protocol: UDP
+          - name: rquotad
+            containerPort: 875
+            protocol: TCP
+          - name: rquotad-udp
+            containerPort: 875
+            protocol: UDP
+          - name: rpcbind
+            containerPort: 111
+            protocol: TCP
+          - name: rpcbind-udp
+            containerPort: 111
+            protocol: UDP
+          - name: statd
+            containerPort: 662
+            protocol: TCP
+          - name: statd-udp
+            containerPort: 662
+            protocol: UDP
+          securityContext:
+            capabilities:
+              add:
+              - DAC_READ_SEARCH
+              - SYS_RESOURCE
+          args:
+            - "-provisioner={{ include "nfs-provisioner.provisionerName" . }}"
+            {{- range $key, $value := .Values.extraArgs }}
+            - "-{{ $key }}={{ $value }}"
+            {{- end }}
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: SERVICE_NAME
+              value: {{ include "nfs-provisioner.fullname" . }}
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          readinessProbe:
+            exec:
+              command:
+              - ls
+              - /export
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+              - ls
+              - /export
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+          - name: data
+            mountPath: /export
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      volumes:
+      - name: data
+      {{- if not .Values.persistence.enabled }}
+        emptyDir: {}
+      {{- else }}
+        persistentVolumeClaim:
+          claimName: {{ include "nfs-provisioner.fullname" . }}
+      {{- end }}

@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "nfs-provisioner.fullname" . }}
+  labels:
+    helm.sh/chart: {{ include "nfs-provisioner.chart" . }}
+    app.kubernetes.io/name: {{ include "nfs-provisioner.name" . }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    {{- range $key, $value := .Values.extraLabels }}
+    "{{ $key }}": "{{ $value }}"
+    {{- end }}
+spec:
+  {{ $serviceType := .Values.service.type | default "ClusterIP" -}}
+  type: {{ $serviceType }}
+  {{- if .Values.service.clusterIP }}
+  clusterIP: {{ .Values.service.clusterIP }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.service.nfsPort | default 2049 }}
+      targetPort: nfs
+      protocol: TCP
+      name: nfs
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.nfsNodePort))) }}
+      nodePort: {{ .Values.service.nfsNodePort | default 2049 }}
+      {{- end }}
+    - port: {{ .Values.service.nfsPort | default 2049 }}
+      targetPort: nfs-udp
+      protocol: UDP
+      name: nfs-udp
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.nfsNodePort))) }}
+      nodePort: {{ .Values.service.nfsNodePort | default 2049 }}
+      {{- end }}
+    - port: {{ .Values.service.nlockmgrPort | default 32803 }}
+      targetPort: nlockmgr
+      protocol: TCP
+      name: nlockmgr
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.nlockmgrNodePort))) }}
+      nodePort: {{ .Values.service.nlockmgrNodePort | default 32803 }}
+      {{- end }}
+    - port: {{ .Values.service.nlockmgrPort | default 32803 }}
+      targetPort: nlockmgr-udp
+      protocol: UDP
+      name: nlockmgr-udp
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.nlockmgrPort))) }}
+      nodePort: {{ .Values.service.nlockmgrNodePort | default 32803 }}
+      {{- end }}
+    - port: {{ .Values.service.mountdPort | default 20048 }}
+      targetPort: mountd
+      protocol: TCP
+      name: mountd
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.mountdNodePort))) }}
+      nodePort: {{ .Values.service.mountdNodePort | default 20048 }}
+      {{- end }}
+    - port: {{ .Values.service.mountdPort | default 20048 }}
+      targetPort: mountd-udp
+      protocol: UDP
+      name: mountd-udp
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.mountdNodePort))) }}
+      nodePort: {{ .Values.service.mountdNodePort | default 20048 }}
+      {{- end }}
+    - port: {{ .Values.service.rquotadPort | default 875 }}
+      targetPort: rquotad
+      protocol: TCP
+      name: rquotad
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.rquotadNodePort))) }}
+      nodePort: {{ .Values.service.rquotadNodePort | default 875 }}
+      {{- end }}
+    - port: {{ .Values.service.rquotadPort | default 875 }}
+      targetPort: rquotad-udp
+      protocol: UDP
+      name: rquotad-udp
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.rquotadNodePort))) }}
+      nodePort: {{ .Values.service.rquotadNodePort | default 875 }}
+      {{- end }}
+    - port: {{ .Values.service.rpcbindPort | default 111 }}
+      targetPort: rpcbind
+      protocol: TCP
+      name: rpcbind
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.rpcbindNodePort))) }}
+      nodePort: {{ .Values.service.rpcbindNodePort | default 111 }}
+      {{- end }}
+    - port: {{ .Values.service.rpcbindPort | default 111 }}
+      targetPort: rpcbind-udp
+      protocol: UDP
+      name: rpcbind-udp
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.rpcbindNodePort))) }}
+      nodePort: {{ .Values.service.rpcbindNodePort | default 111 }}
+      {{- end }}
+    - port: {{ .Values.service.statdPort | default 662 }}
+      targetPort: statd
+      protocol: TCP
+      name: statd
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.statdPort))) }}
+      nodePort: {{ .Values.service.statdNodePort | default 662 }}
+      {{- end }}
+    - port: {{ .Values.service.statdPort | default 662 }}
+      targetPort: statd-udp
+      protocol: UDP
+      name: statd-udp
+      {{- if (and (eq $serviceType "NodePort") (not (empty .Values.service.statdPort))) }}
+      nodePort: {{ .Values.service.statdNodePort | default 662 }}
+      {{- end }}
+  {{- with .Values.service.externalIPs }}
+  externalIPs:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    app.kubernetes.io/name: {{ include "nfs-provisioner.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

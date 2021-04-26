@@ -1,0 +1,42 @@
+# This chart inherits from the following sources under the Apache 2.0 license
+# (and is licensed the same), sources were borrowed on Apr 25, 2021:
+# - https://github.com/kubernetes-sigs/nfs-ganesha-server-and-external-provisioner/tree/master/deploy/helm
+#   (https://github.com/kubernetes-sigs/nfs-ganesha-server-and-external-provisioner)
+# - https://longhorn.io/docs/1.0.2/advanced-resources/rwx-workloads/
+#   (https://github.com/longhorn/longhorn)
+# Authors (there's many) can be retrieved from the source code repositories of
+# these sources.
+apiVersion: v2
+
+appVersion: 3.0.0
+
+description: >-
+  nfs-server-provisioner is an out-of-tree dynamic provisioner
+  for Kubernetes. You can use it to quickly & easily deploy shared storage that
+  works almost anywhere.
+
+name: nfs-server-provisioner
+
+version: 1.3.0
+
+maintainers:
+- name: raphael
+  email: raphael.monrouzeau@gmail.com
+
+home: https://github.com/raphaelmonrouzeau/nfs-server-provisioner-chart
+
+sources:
+- https://github.com/raphaelmonrouzeau/nfs-server-provisioner-chart
+
+keywords:
+- storage
+- provisioner
+- nfs
+- ReadWriteMany
+# Chart icon "Icon from the Human icon theme." by
+# - Jeff Waugh <jdub@perkypants.org>;
+# - Daniel Holbach <daniel.holbach@ubuntu.com>;
+# - Martin Pitt <martin.pitt@ubuntu.com>
+# under [Creative Commons Attribution-Share Alike
+# 3.0](https://creativecommons.org/licenses/by-sa/3.0/). No changes were made.
+icon: https://commons.wikimedia.org/wiki/File:Human-folder-remote-nfs.svg
